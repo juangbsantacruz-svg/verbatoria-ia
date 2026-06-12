@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VerbatoriaIA — Test de Talento</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #F7F6F2; font-family: 'Inter', sans-serif; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spin { animation: spin 1.2s linear infinite; display: inline-block; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const APPS_SCRIPT_URL = "REEMPLAZAR_CON_TU_URL";
+
+const QUESTIONS = [
+  // BLOQUE 1 — Comportamiento en situaciones sociales/laborales
+  { id:1, text:"Estás en una reunión y surge un problema inesperado. ¿Cuál es tu reacción más natural?", options:[
+    { text:"Analizo la situación en silencio antes de opinar", scores:{logica:3,intrapersonal:1}},
+    { text:"Propongo ideas en voz alta rápidamente", scores:{linguistica:2,interpersonal:2}},
+    { text:"Busco el consenso antes de actuar", scores:{interpersonal:3}},
+    { text:"Tomo el control y organizo al equipo", scores:{interpersonal:2,kinestesica:2}},
+  ]},
+  { id:2, text:"Alguien de tu equipo está desmotivado. ¿Qué hacés primero?", options:[
+    { text:"Lo escucho para entender qué le pasa", scores:{interpersonal:3,intrapersonal:1}},
+    { text:"Le propongo un plan concreto de mejora", scores:{logica:3}},
+    { text:"Lo involucro en algo que lo active", scores:{kinestesica:3}},
+    { text:"Le doy espacio y tiempo para que lo resuelva", scores:{intrapersonal:3}},
+  ]},
+  { id:3, text:"Te piden liderar un proyecto nuevo desde cero. ¿Cómo empezás?", options:[
+    { text:"Defino objetivos y armo un cronograma", scores:{logica:3,visual:1}},
+    { text:"Convoco al equipo y escucho sus ideas", scores:{interpersonal:3}},
+    { text:"Arranco con lo que tengo y ajusto en el camino", scores:{kinestesica:3}},
+    { text:"Investigo referentes y casos similares", scores:{linguistica:2,logica:2}},
+  ]},
+  { id:4, text:"¿Cómo preferís que te den feedback sobre tu trabajo?", options:[
+    { text:"Con datos concretos y ejemplos específicos", scores:{logica:3}},
+    { text:"En una charla cara a cara, distendida", scores:{interpersonal:3}},
+    { text:"Por escrito para poder releerlo", scores:{linguistica:3}},
+    { text:"Con libertad de réplica y diálogo", scores:{interpersonal:2,intrapersonal:2}},
+  ]},
+  { id:5, text:"En un grupo nuevo, ¿cuál es tu comportamiento más frecuente?", options:[
+    { text:"Observo antes de participar", scores:{intrapersonal:3,logica:1}},
+    { text:"Rompo el hielo y genero conversación", scores:{interpersonal:3}},
+    { text:"Busco a quién conectar con quién", scores:{interpersonal:2,intrapersonal:2}},
+    { text:"Me enfoco en la tarea común que nos une", scores:{logica:2,kinestesica:2}},
+  ]},
+
+  // BLOQUE 2 — Aprendizaje y procesamiento
+  { id:6, text:"Cuando tenés que aprender algo nuevo, ¿cómo lo absorbés mejor?", options:[
+    { text:"Leyendo y tomando notas", scores:{linguistica:3,logica:1}},
+    { text:"Viendo cómo lo hace alguien y imitando", scores:{visual:3,kinestesica:1}},
+    { text:"Escuchando una explicación oral", scores:{musical:2,linguistica:2}},
+    { text:"Haciéndolo directamente, probando", scores:{kinestesica:3}},
+  ]},
+  { id:7, text:"¿Cuándo sentís que realmente entendiste algo?", options:[
+    { text:"Cuando puedo explicárselo a otra persona", scores:{linguistica:3,interpersonal:1}},
+    { text:"Cuando lo aplico automáticamente sin pensar", scores:{kinestesica:3}},
+    { text:"Cuando encaja con todo lo que ya sabía", scores:{logica:3}},
+    { text:"Cuando siento confianza interna al hacerlo", scores:{intrapersonal:3}},
+  ]},
+  { id:8, text:"Tenés que preparar una presentación importante. ¿Por dónde empezás?", options:[
+    { text:"Armo un esquema lógico con secciones claras", scores:{logica:3}},
+    { text:"Pienso en el diseño visual primero", scores:{visual:3}},
+    { text:"Escribo el guion o lo que voy a decir", scores:{linguistica:3}},
+    { text:"Practico en voz alta desde el principio", scores:{kinestesica:2,interpersonal:1}},
+  ]},
+  { id:9, text:"¿Qué tipo de explicación te resulta más fácil de seguir?", options:[
+    { text:"Un diagrama o esquema visual", scores:{visual:3}},
+    { text:"Una historia o ejemplo concreto", scores:{linguistica:2,interpersonal:1}},
+    { text:"Una fórmula o estructura paso a paso", scores:{logica:3}},
+    { text:"Una demostración práctica en vivo", scores:{kinestesica:3}},
+  ]},
+  { id:10, text:"Cuando cometés un error importante, ¿qué hacés primero?", options:[
+    { text:"Analizo qué salió mal y por qué", scores:{logica:3,intrapersonal:1}},
+    { text:"Hablo con alguien de confianza", scores:{interpersonal:3}},
+    { text:"Corrijo y sigo adelante sin quedarme en el error", scores:{kinestesica:3}},
+    { text:"Reflexiono solo hasta entender la lección", scores:{intrapersonal:3}},
+  ]},
+
+  // BLOQUE 3 — Tiempo libre y energía natural
+  { id:11, text:"Cuando tenés un rato libre inesperado, ¿qué hacés?", options:[
+    { text:"Leo, escribo o busco algo que me interesa", scores:{linguistica:3,logica:1}},
+    { text:"Salgo, me muevo, hago algo físico", scores:{kinestesica:3}},
+    { text:"Llamo o me junto con alguien", scores:{interpersonal:3}},
+    { text:"Escucho música, dibujo o creo algo", scores:{musical:2,visual:2}},
+  ]},
+  { id:12, text:"¿Qué actividad te recarga energía genuinamente?", options:[
+    { text:"Estar solo con mis pensamientos o un libro", scores:{intrapersonal:2,linguistica:2}},
+    { text:"Juntarme con personas que me inspiran", scores:{interpersonal:3}},
+    { text:"Hacer algo físico — deportes, caminatas, etc.", scores:{kinestesica:3}},
+    { text:"Crear algo con mis manos o con herramientas", scores:{visual:2,kinestesica:2}},
+  ]},
+  { id:13, text:"¿Cuál de estas actividades harías si no tuvieras que trabajar?", options:[
+    { text:"Escribir, enseñar o comunicar algo", scores:{linguistica:3}},
+    { text:"Viajar, explorar y conocer gente nueva", scores:{interpersonal:2,kinestesica:2}},
+    { text:"Investigar, resolver enigmas o estudiar", scores:{logica:3}},
+    { text:"Crear arte, diseño o música", scores:{visual:2,musical:2}},
+  ]},
+  { id:14, text:"¿Cuándo sentís que el tiempo 'vuela' sin darte cuenta?", options:[
+    { text:"Cuando estoy leyendo o escribiendo algo absorbente", scores:{linguistica:3}},
+    { text:"Cuando coordino un proyecto o equipo", scores:{interpersonal:2,logica:2}},
+    { text:"Cuando estoy construyendo o haciendo algo físico", scores:{kinestesica:3}},
+    { text:"Cuando escucho música o contemplo algo bello", scores:{musical:3}},
+  ]},
+  { id:15, text:"Si tuvieras que elegir un hobby nuevo, ¿cuál te tentaría más?", options:[
+    { text:"Aprender un idioma nuevo", scores:{linguistica:3}},
+    { text:"Un deporte de equipo o actividad grupal", scores:{kinestesica:2,interpersonal:2}},
+    { text:"Fotografía, diseño o alguna disciplina visual", scores:{visual:3}},
+    { text:"Un instrumento musical", scores:{musical:3}},
+  ]},
+
+  // BLOQUE 4 — Decisiones y presión
+  { id:16, text:"Cuando tomás una decisión importante bajo presión, ¿qué prima?", options:[
+    { text:"La lógica y los datos disponibles", scores:{logica:3}},
+    { text:"La intuición, lo que me dice el instinto", scores:{intrapersonal:3}},
+    { text:"La opinión de personas cercanas", scores:{interpersonal:3}},
+    { text:"La velocidad — decido rápido y ajusto después", scores:{kinestesica:2,logica:1}},
+  ]},
+  { id:17, text:"Cuando algo te frustra, ¿cómo lo procesás?", options:[
+    { text:"Me desconecto y necesito tiempo solo", scores:{intrapersonal:3}},
+    { text:"Lo hablo con alguien de confianza", scores:{interpersonal:3}},
+    { text:"Me pongo en movimiento para despejarme", scores:{kinestesica:3}},
+    { text:"Analizo qué falló y busco solución de inmediato", scores:{logica:3}},
+  ]},
+  { id:18, text:"Ante una situación de riesgo, ¿cómo reaccionás?", options:[
+    { text:"Evalúo pros y contras antes de moverme", scores:{logica:3}},
+    { text:"Confío en mi experiencia previa", scores:{kinestesica:2,intrapersonal:2}},
+    { text:"Consulto con otros antes de decidir", scores:{interpersonal:3}},
+    { text:"Actúo y asumo las consecuencias", scores:{kinestesica:3}},
+  ]},
+  { id:19, text:"¿Qué te genera más ansiedad en el trabajo?", options:[
+    { text:"No tener datos suficientes para decidir", scores:{logica:3}},
+    { text:"Los conflictos interpersonales no resueltos", scores:{interpersonal:2,intrapersonal:2}},
+    { text:"La falta de movimiento o acción concreta", scores:{kinestesica:3}},
+    { text:"No poder expresarme o ser malentendido", scores:{linguistica:3}},
+  ]},
+  { id:20, text:"Cuando un plan falla, ¿qué hacés?", options:[
+    { text:"Reviso los datos para entender dónde estuvo el error", scores:{logica:3}},
+    { text:"Busco apoyo en el equipo para replantear", scores:{interpersonal:3}},
+    { text:"Improviso y ajusto sobre la marcha", scores:{kinestesica:3}},
+    { text:"Me tomo un momento para reflexionar antes de actuar", scores:{intrapersonal:3}},
+  ]},
+
+  // BLOQUE 5 — Rol, comunicación y liderazgo
+  { id:21, text:"Cuando trabajás en equipo, ¿qué rol ocupás más naturalmente?", options:[
+    { text:"El que genera ideas y propone caminos", scores:{linguistica:2,logica:2}},
+    { text:"El que organiza y hace seguimiento", scores:{logica:3}},
+    { text:"El que motiva y mantiene la cohesión", scores:{interpersonal:3}},
+    { text:"El que ejecuta y lleva las cosas a la práctica", scores:{kinestesica:3}},
+  ]},
+  { id:22, text:"¿Cómo convencés a alguien de una idea tuya?", options:[
+    { text:"Con argumentos sólidos y datos", scores:{logica:3}},
+    { text:"Con energía y entusiasmo contagioso", scores:{interpersonal:3,kinestesica:1}},
+    { text:"Escucho primero y adapto mi mensaje", scores:{interpersonal:2,intrapersonal:2}},
+    { text:"Con ejemplos prácticos y resultados reales", scores:{kinestesica:2,visual:1}},
+  ]},
+  { id:23, text:"¿Cómo preferís comunicar algo importante?", options:[
+    { text:"Cara a cara, en persona", scores:{interpersonal:3}},
+    { text:"Por escrito, con tiempo para organizarme", scores:{linguistica:3}},
+    { text:"Con una presentación visual", scores:{visual:3}},
+    { text:"En una charla informal, sin estructura", scores:{interpersonal:2,linguistica:1}},
+  ]},
+  { id:24, text:"¿Qué tipo de reuniones te parecen más productivas?", options:[
+    { text:"Las cortas, con agenda y resultados claros", scores:{logica:3}},
+    { text:"Las abiertas, donde fluye la conversación", scores:{interpersonal:3}},
+    { text:"Las que terminan en decisiones y acciones concretas", scores:{kinestesica:3}},
+    { text:"Las que incluyen material visual o demos", scores:{visual:3}},
+  ]},
+  { id:25, text:"¿Qué te hace sentir que contribuiste de verdad en un proyecto?", options:[
+    { text:"Que mis análisis guiaron una decisión clave", scores:{logica:3}},
+    { text:"Que el equipo funcionó mejor gracias a mí", scores:{interpersonal:3}},
+    { text:"Que algo concreto existe porque yo lo hice", scores:{kinestesica:3}},
+    { text:"Que el mensaje llegó claro y generó impacto", scores:{linguistica:3}},
+  ]},
+
+  // BLOQUE 6 — Identidad, propósito y visión
+  { id:26, text:"¿Cómo sabés que dominaste algo?", options:[
+    { text:"Puedo explicárselo claramente a otro", scores:{linguistica:3,interpersonal:1}},
+    { text:"Lo aplico automáticamente, sin pensar", scores:{kinestesica:3}},
+    { text:"Los resultados lo demuestran", scores:{logica:3}},
+    { text:"Siento confianza interna genuina", scores:{intrapersonal:3}},
+  ]},
+  { id:27, text:"Cuando imaginás tu versión más exitosa en 10 años, ¿qué ves?", options:[
+    { text:"Liderando una organización o equipo grande", scores:{interpersonal:3,logica:1}},
+    { text:"Siendo referente experto en mi campo", scores:{logica:2,linguistica:2}},
+    { text:"Habiendo construido algo propio", scores:{kinestesica:2,visual:2}},
+    { text:"Teniendo impacto real en la vida de otros", scores:{interpersonal:2,intrapersonal:2}},
+  ]},
+  { id:28, text:"¿Qué te describe mejor en tu mejor versión?", options:[
+    { text:"Enfocado, productivo, con todo bajo control", scores:{logica:2,intrapersonal:2}},
+    { text:"Rodeado de gente, generando energía", scores:{interpersonal:3,kinestesica:1}},
+    { text:"Creando algo nuevo que antes no existía", scores:{visual:2,kinestesica:2}},
+    { text:"Ayudando a alguien a crecer o superar algo", scores:{interpersonal:2,intrapersonal:2}},
+  ]},
+  { id:29, text:"¿Cuál de estas frases te representa más?", options:[
+    { text:"'Primero entiendo, después actúo'", scores:{logica:2,intrapersonal:2}},
+    { text:"'Las relaciones son lo más importante'", scores:{interpersonal:3}},
+    { text:"'Hecho es mejor que perfecto'", scores:{kinestesica:3}},
+    { text:"'Todo comunica — hay que hacerlo bien'", scores:{linguistica:2,visual:2}},
+  ]},
+  { id:30, text:"Si tuvieras que elegir una legado profesional, ¿cuál elegiría?", options:[
+    { text:"Haber construido sistemas o soluciones que perduran", scores:{logica:2,visual:2}},
+    { text:"Haber formado personas que luego superaron al maestro", scores:{interpersonal:3,intrapersonal:1}},
+    { text:"Haber creado algo original que cambió el campo", scores:{visual:2,linguistica:2}},
+    { text:"Haber liderado equipos que lograron lo imposible", scores:{interpersonal:2,kinestesica:2}},
+  ]},
+];
+
+const DIMENSIONS = [
+  { key:"interpersonal", label:"Interpersonal",     color:"#2563EB", emoji:"👥" },
+  { key:"kinestesica",   label:"Kinestésica",        color:"#16A34A", emoji:"⚡" },
+  { key:"logica",        label:"Lógico-Matemática",  color:"#7C3AED", emoji:"🧮" },
+  { key:"intrapersonal", label:"Intrapersonal",      color:"#0D9488", emoji:"🔍" },
+  { key:"linguistica",   label:"Lingüística",        color:"#D97706", emoji:"📝" },
+  { key:"visual",        label:"Visual-Espacial",    color:"#DB2777", emoji:"🎨" },
+  { key:"musical",       label:"Musical",            color:"#6B7280", emoji:"🎵" },
+];
+
+const ARCHETYPES = [
+  { name:"El Líder Constructor",    keys:["interpersonal","kinestesica"],   desc:"Liderás desde adentro, generando movimiento y resultados concretos. Tu energía es la del que hace las cosas pasar y arrastra al equipo con naturalidad." },
+  { name:"El Estratega Analítico",  keys:["logica","intrapersonal"],        desc:"Pensás antes de hablar y tomás decisiones con fundamento. Tu valor más distintivo es la profundidad de tu análisis y tu capacidad de ver lo que otros no ven." },
+  { name:"El Comunicador Creativo", keys:["linguistica","visual"],          desc:"Transformás ideas en mensajes que impactan. Tenés un don natural para hacer lo complejo comprensible y lo aburrido, atractivo." },
+  { name:"El Conector Empático",    keys:["interpersonal","intrapersonal"], desc:"Leés a las personas antes de que hablen. Tu inteligencia emocional es tu mayor activo y las relaciones que construís son duraderas." },
+  { name:"El Ejecutor Práctico",    keys:["kinestesica","logica"],          desc:"Sos de los que hacen. Combinás velocidad de acción con razonamiento sólido. Donde otros debaten, vos ya avanzaste." },
+  { name:"El Visionario",           keys:["visual","linguistica"],          desc:"Ves el panorama completo y sabés cómo contarlo. Tu mente construye futuros posibles y encontrás conexiones que otros no imaginan." },
+  { name:"El Guardián Reflexivo",   keys:["intrapersonal","logica"],        desc:"Tus mejores decisiones vienen de adentro. Combinás autoconocimiento profundo con pensamiento estructurado. Sos la voz que calma el ruido." },
+];
+
+function computeScores(answers) {
+  const raw = {interpersonal:0,kinestesica:0,logica:0,intrapersonal:0,linguistica:0,visual:0,musical:0};
+  answers.forEach(({scores}) => Object.entries(scores).forEach(([k,v]) => { raw[k]=(raw[k]||0)+v; }));
+  const maxPossible = 90;
+  const out = {};
+  Object.entries(raw).forEach(([k,v]) => { out[k]=Math.min(100,Math.round((v/maxPossible)*100*2.1)); });
+  return out;
+}
+
+function getArchetype(scores) {
+  let best=ARCHETYPES[0], bestVal=-1;
+  ARCHETYPES.forEach(a => {
+    const avg=a.keys.reduce((s,k)=>s+(scores[k]||0),0)/a.keys.length;
+    if(avg>bestVal){bestVal=avg;best=a;}
+  });
+  return best;
+}
+
+function getTQ(scores){ return Math.round(Object.values(scores).reduce((a,b)=>a+b,0)/7); }
+
+async function sendToSheets(name, scores) {
+  if (APPS_SCRIPT_URL === "REEMPLAZAR_CON_TU_URL") return;
+  const arch = getArchetype(scores);
+  const tq = getTQ(scores);
+  const date = new Date().toLocaleDateString("es-AR");
+  const payload = {
+    nombre:name, fecha:date, tq, arquetipo:arch.name,
+    interpersonal:scores.interpersonal||0, kinestesica:scores.kinestesica||0,
+    logica:scores.logica||0, intrapersonal:scores.intrapersonal||0,
+    linguistica:scores.linguistica||0, visual:scores.visual||0, musical:scores.musical||0,
+  };
+  try {
+    await fetch(APPS_SCRIPT_URL, {method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  } catch(e) {}
+}
+
+function RadarSVG({scores,size=230}){
+  const cx=size/2,cy=size/2,r=size*0.35,n=7;
+  const angle=i=>(i*2*Math.PI/n)-Math.PI/2;
+  const gp=DIMENSIONS.map((_,i)=>({x:cx+r*Math.cos(angle(i)),y:cy+r*Math.sin(angle(i))}));
+  const dp=DIMENSIONS.map((d,i)=>{const v=(scores[d.key]||0)/100;return{x:cx+r*v*Math.cos(angle(i)),y:cy+r*v*Math.sin(angle(i))};});
+  const lp=DIMENSIONS.map((d,i)=>({x:cx+(r+24)*Math.cos(angle(i)),y:cy+(r+24)*Math.sin(angle(i)),label:d.label}));
+  return (
+    <svg width={size} height={size} style={{overflow:"visible",display:"block",margin:"0 auto"}}>
+      {[.25,.5,.75,1].map(f=>(
+        <polygon key={f} points={gp.map(p=>{const dx=p.x-cx,dy=p.y-cy;return`${cx+dx*f},${cy+dy*f}`;}).join(" ")} fill="none" stroke="#E5E7EB" strokeWidth="1"/>
+      ))}
+      {gp.map((p,i)=><line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#E5E7EB" strokeWidth="1"/>)}
+      <polygon points={dp.map(p=>`${p.x},${p.y}`).join(" ")} fill="rgba(37,99,235,0.1)" stroke="#2563EB" strokeWidth="2.5"/>
+      {dp.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r={5} fill={DIMENSIONS[i].color} stroke="white" strokeWidth="1.5"/>)}
+      {lp.map((p,i)=>(
+        <text key={i} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fontSize="8" fill="#374151" fontFamily="Inter,sans-serif">{p.label}</text>
+      ))}
+    </svg>
+  );
+}
+
+function Welcome({onStart}){
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh",background:"#F7F6F2"}}>
+      <div style={{background:"#0F172A",padding:"3.5rem 2rem 3rem",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",right:-10,top:-10,fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"10rem",color:"rgba(255,255,255,0.03)",lineHeight:1,userSelect:"none"}}>TQ</div>
+        <div style={{fontSize:10,letterSpacing:"0.25em",color:"rgba(255,255,255,0.3)",marginBottom:12,textTransform:"uppercase",fontFamily:"Inter,sans-serif"}}>Coeficiente de Talento</div>
+        <div style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"3rem",color:"white",lineHeight:1,marginBottom:12}}>
+          Verbatoria<span style={{color:"#3B82F6"}}>IA</span>
+        </div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.45)",fontFamily:"Inter,sans-serif",lineHeight:1.7}}>Descubrí tu perfil de inteligencias<br/>basado en la teoría de Howard Gardner</div>
+      </div>
+      <div style={{padding:"1.75rem 1.5rem"}}>
+        <div style={{background:"white",borderRadius:12,padding:"1.25rem 1.5rem",marginBottom:"1.5rem",display:"flex",flexDirection:"column",gap:14,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+          {[["📋","30 preguntas situacionales"],["🧠","7 dimensiones de inteligencia (Gardner)"],["📊","Reporte con radar, arquetipo y fortalezas"],["⏱️","Aproximadamente 12 minutos · Sin registro"]].map(([ic,tx])=>(
+            <div key={tx} style={{display:"flex",alignItems:"center",gap:12,fontSize:13,color:"#374151",fontFamily:"Inter,sans-serif"}}>
+              <span style={{fontSize:18,width:26,textAlign:"center"}}>{ic}</span><span>{tx}</span>
+            </div>
+          ))}
+        </div>
+        <button onClick={onStart} style={{width:"100%",padding:"16px",background:"#2563EB",color:"white",border:"none",borderRadius:10,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"Inter,sans-serif",letterSpacing:"0.02em",boxShadow:"0 4px 12px rgba(37,99,235,0.3)"}}>
+          Empezar el test →
+        </button>
+        <div style={{textAlign:"center",marginTop:12,fontSize:11,color:"#9CA3AF",fontFamily:"Inter,sans-serif"}}>Respondé espontáneamente — no hay respuestas correctas</div>
+      </div>
+    </div>
+  );
+}
+
+function NameEntry({onSubmit}){
+  const [name,setName]=useState("");
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh",background:"#F7F6F2"}}>
+      <div style={{background:"#0F172A",padding:"2rem 1.5rem 1.75rem"}}>
+        <div style={{fontSize:10,letterSpacing:"0.2em",color:"rgba(255,255,255,0.3)",marginBottom:8,textTransform:"uppercase",fontFamily:"Inter,sans-serif"}}>Antes de empezar</div>
+        <div style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"1.6rem",color:"white"}}>¿Cómo te llamás?</div>
+      </div>
+      <div style={{padding:"1.5rem"}}>
+        <p style={{fontSize:13,color:"#6B7280",fontFamily:"Inter,sans-serif",marginBottom:16,lineHeight:1.6}}>Tu nombre aparecerá en el reporte y en el registro del equipo.</p>
+        <input
+          style={{width:"100%",padding:"15px 16px",background:"white",border:"1.5px solid #E5E7EB",borderRadius:10,fontSize:15,color:"#0F172A",fontFamily:"Inter,sans-serif",outline:"none",boxShadow:"0 1px 3px rgba(0,0,0,0.06)",marginBottom:14}}
+          placeholder="Tu nombre y apellido"
+          value={name}
+          onChange={e=>setName(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&name.trim()&&onSubmit(name.trim())}
+          autoFocus
+        />
+        <button
+          onClick={()=>name.trim()&&onSubmit(name.trim())}
+          style={{width:"100%",padding:"16px",background:name.trim()?"#2563EB":"#BFDBFE",color:"white",border:"none",borderRadius:10,fontSize:15,fontWeight:600,cursor:name.trim()?"pointer":"default",fontFamily:"Inter,sans-serif",transition:"background 0.2s",boxShadow:name.trim()?"0 4px 12px rgba(37,99,235,0.3)":"none"}}
+        >Continuar →</button>
+      </div>
+    </div>
+  );
+}
+
+function QuestionScreen({question,current,total,onAnswer}){
+  const [sel,setSel]=useState(null);
+  useEffect(()=>setSel(null),[question]);
+  const pct=Math.round((current/total)*100);
+  const block=Math.ceil(current/5);
+  const blockLabels=["Comportamiento social","Aprendizaje","Tiempo libre","Decisiones","Comunicación","Identidad"];
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh",background:"#F7F6F2"}}>
+      <div style={{height:4,background:"#E5E7EB"}}>
+        <div style={{height:"100%",background:"#2563EB",width:`${pct}%`,transition:"width 0.4s ease",borderRadius:"0 99px 99px 0"}}/>
+      </div>
+      <div style={{background:"#0F172A",padding:"1.25rem 1.5rem 1.5rem"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div style={{fontSize:10,letterSpacing:"0.15em",color:"rgba(255,255,255,0.3)",textTransform:"uppercase",fontFamily:"Inter,sans-serif"}}>
+            {current} / {total}
+          </div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.25)",fontFamily:"Inter,sans-serif",background:"rgba(255,255,255,0.05)",padding:"3px 8px",borderRadius:99}}>
+            {blockLabels[block-1]||""}
+          </div>
+        </div>
+        <div style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:"1.05rem",color:"white",lineHeight:1.5}}>{question.text}</div>
+      </div>
+      <div style={{padding:"1.1rem 1.5rem 2rem",display:"flex",flexDirection:"column",gap:9}}>
+        {question.options.map((opt,i)=>(
+          <button key={i}
+            style={{width:"100%",textAlign:"left",padding:"14px 16px",background:sel===i?"#EFF6FF":"white",border:`1.5px solid ${sel===i?"#2563EB":"#E5E7EB"}`,borderRadius:10,fontSize:13,color:sel===i?"#1D4ED8":"#374151",cursor:"pointer",fontFamily:"Inter,sans-serif",lineHeight:1.55,transition:"all 0.15s",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}}
+            onClick={()=>{setSel(i);setTimeout(()=>onAnswer(opt),300);}}
+          >{opt.text}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Sending(){
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh",background:"#F7F6F2",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{textAlign:"center",padding:"2rem"}}>
+        <div style={{fontSize:40,marginBottom:16}} className="spin">⚙️</div>
+        <div style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:"1.3rem",color:"#0F172A",marginBottom:8}}>Calculando tu perfil TQ...</div>
+        <div style={{fontSize:13,color:"#6B7280",fontFamily:"Inter,sans-serif"}}>Procesando 30 respuestas · 7 dimensiones</div>
+      </div>
+    </div>
+  );
+}
+
+function ReportScreen({name,scores,onBack}){
+  const tq=getTQ(scores);
+  const arch=getArchetype(scores);
+  const sorted=[...DIMENSIONS].sort((a,b)=>(scores[b.key]||0)-(scores[a.key]||0));
+  const top3=sorted.slice(0,3);
+
+  const getZone = val => val>=75?"ALTO":val>=50?"MEDIO":"EN DESARROLLO";
+  const getZoneColor = val => val>=75?"#16A34A":val>=50?"#D97706":"#9CA3AF";
+  const getZoneBg = val => val>=75?"#DCFCE7":val>=50?"#FEF3C7":"#F3F4F6";
+
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh",background:"#F7F6F2",paddingBottom:48}}>
+
+      {/* HEADER */}
+      <div style={{background:"#0F172A",padding:"2rem 1.5rem 2rem",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",right:-10,top:-10,fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"8rem",color:"rgba(255,255,255,0.04)",lineHeight:1,userSelect:"none"}}>{tq}</div>
+        <div style={{fontSize:10,letterSpacing:"0.2em",color:"rgba(255,255,255,0.3)",marginBottom:6,textTransform:"uppercase",fontFamily:"Inter,sans-serif"}}>Reporte TQ · 30 preguntas</div>
+        <div style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"1.7rem",color:"white",marginBottom:16,lineHeight:1.2}}>{name}</div>
+        <div style={{display:"inline-flex",alignItems:"baseline",gap:8,background:"rgba(37,99,235,0.25)",borderRadius:10,padding:"10px 18px",border:"1px solid rgba(59,130,246,0.35)"}}>
+          <span style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"2.4rem",color:"white",lineHeight:1}}>{tq}</span>
+          <span style={{fontSize:11,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:"0.12em",fontFamily:"Inter,sans-serif"}}>TQ Score</span>
+        </div>
+        <div style={{marginTop:10,fontSize:11,color:"rgba(255,255,255,0.3)",fontFamily:"Inter,sans-serif"}}>✅ Resultado enviado al equipo automáticamente</div>
+      </div>
+
+      {/* ARQUETIPO */}
+      <div style={{background:"white",margin:"1rem 1rem 0",borderRadius:12,padding:"1.4rem",borderLeft:"4px solid #2563EB",boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+        <div style={{fontSize:9,letterSpacing:"0.2em",color:"#9CA3AF",textTransform:"uppercase",marginBottom:5,fontFamily:"Inter,sans-serif"}}>Tu arquetipo dominante</div>
+        <div style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"1.25rem",color:"#2563EB",marginBottom:8}}>{arch.name}</div>
+        <div style={{fontSize:13,color:"#374151",lineHeight:1.75,fontFamily:"Inter,sans-serif"}}>{arch.desc}</div>
+      </div>
+
+      {/* TOP 3 */}
+      <div style={{background:"white",margin:"0.75rem 1rem 0",borderRadius:12,padding:"1.4rem",boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+        <div style={{fontSize:9,letterSpacing:"0.2em",color:"#9CA3AF",textTransform:"uppercase",marginBottom:14,fontFamily:"Inter,sans-serif"}}>Tus 3 talentos principales</div>
+        {top3.map((d,idx)=>(
+          <div key={d.key} style={{display:"flex",alignItems:"center",gap:12,marginBottom:idx<2?12:0,padding:"12px 14px",background:idx===0?"#EFF6FF":idx===1?"#F5F3FF":"#F9FAFB",borderRadius:10,border:`1px solid ${idx===0?"#BFDBFE":idx===1?"#DDD6FE":"#F3F4F6"}`}}>
+            <div style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"1.5rem",color:idx===0?"#2563EB":idx===1?"#7C3AED":"#9CA3AF",minWidth:30}}>#{idx+1}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:600,color:"#0F172A",fontFamily:"Inter,sans-serif",marginBottom:6}}>{d.emoji} {d.label}</div>
+              <div style={{height:5,background:"rgba(0,0,0,0.06)",borderRadius:99}}>
+                <div style={{height:"100%",borderRadius:99,background:d.color,width:`${scores[d.key]||0}%`}}/>
+              </div>
+            </div>
+            <div style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:"1.15rem",color:d.color}}>{scores[d.key]||0}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* RADAR */}
+      <div style={{background:"white",margin:"0.75rem 1rem 0",borderRadius:12,padding:"1.4rem",boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+        <div style={{fontSize:9,letterSpacing:"0.2em",color:"#9CA3AF",textTransform:"uppercase",marginBottom:16,fontFamily:"Inter,sans-serif"}}>Perfil radial · 7 inteligencias</div>
+        <RadarSVG scores={scores} size={230}/>
+      </div>
+
+      {/* BARRAS COMPLETAS */}
+      <div style={{background:"white",margin:"0.75rem 1rem 0",borderRadius:12,padding:"1.4rem",boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+        <div style={{fontSize:9,letterSpacing:"0.2em",color:"#9CA3AF",textTransform:"uppercase",marginBottom:16,fontFamily:"Inter,sans-serif"}}>Las 7 inteligencias · Desglose completo</div>
+        {sorted.map(d=>{
+          const val=scores[d.key]||0;
+          return (
+            <div key={d.key} style={{marginBottom:15}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <span style={{fontSize:12,fontWeight:500,color:"#0F172A",fontFamily:"Inter,sans-serif"}}>{d.emoji} {d.label}</span>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:9,background:getZoneBg(val),color:getZoneColor(val),borderRadius:99,padding:"2px 8px",fontFamily:"Inter,sans-serif",fontWeight:600}}>{getZone(val)}</span>
+                  <span style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:13,color:d.color}}>{val}</span>
+                </div>
+              </div>
+              <div style={{height:5,background:"#F3F4F6",borderRadius:99,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:99,background:d.color,width:`${val}%`}}/>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* FOOTER */}
+      <div style={{margin:"0.75rem 1rem 0",padding:"1rem",textAlign:"center"}}>
+        <div style={{fontSize:11,color:"#9CA3AF",fontFamily:"Inter,sans-serif",lineHeight:1.7}}>
+          Basado en la Teoría de Inteligencias Múltiples de Howard Gardner<br/>
+          Este reporte es orientativo · VerbatoriaIA
+        </div>
+      </div>
+      <div style={{padding:"0 1rem"}}>
+        <button onClick={onBack} style={{width:"100%",padding:"14px",background:"white",color:"#374151",border:"1.5px solid #E5E7EB",borderRadius:10,fontSize:14,fontWeight:500,cursor:"pointer",fontFamily:"Inter,sans-serif"}}>
+          ← Volver al inicio
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [view,setView]=useState("welcome");
+  const [q,setQ]=useState(0);
+  const [answers,setAnswers]=useState([]);
+  const [name,setName]=useState("");
+  const [scores,setScores]=useState(null);
+
+  const handleAnswer=async(opt)=>{
+    const next=[...answers,opt];
+    if(q+1<QUESTIONS.length){setAnswers(next);setQ(q+1);}
+    else{
+      setView("sending");
+      const s=computeScores(next);
+      await sendToSheets(name,s);
+      setScores(s);
+      setView("report");
+    }
+  };
+
+  const reset=()=>{setView("welcome");setQ(0);setAnswers([]);setName("");setScores(null);};
+
+  if(view==="welcome") return <Welcome onStart={()=>setView("name")}/>;
+  if(view==="name")    return <NameEntry onSubmit={n=>{setName(n);setView("test");}}/>;
+  if(view==="test")    return <QuestionScreen question={QUESTIONS[q]} current={q+1} total={QUESTIONS.length} onAnswer={handleAnswer}/>;
+  if(view==="sending") return <Sending/>;
+  if(view==="report")  return <ReportScreen name={name} scores={scores} onBack={reset}/>;
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
